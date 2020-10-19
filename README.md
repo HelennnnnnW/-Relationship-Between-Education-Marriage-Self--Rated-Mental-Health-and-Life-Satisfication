@@ -1,0 +1,1 @@
+# -Relationship-Between-Education-Marriage-Self--Rated-Mental-Health-and-Life-Satisfication
