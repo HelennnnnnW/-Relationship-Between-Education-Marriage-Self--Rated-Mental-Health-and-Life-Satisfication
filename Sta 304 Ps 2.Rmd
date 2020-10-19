@@ -1,0 +1,179 @@
+---
+title: "Relationship Between Education, Marriage, Self-Rated Mental Health and Life Satisfication"
+author: "WENYU SHU 1004951082, SHIHAN WANG 1005165063, KEFAN CAI 1004819949"
+date: "Oct.19, 2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+bibliorgraphy: references
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+
+## Abstract:
+  
+  This research using multiple linear regression to show how education, marriage, and self-rated mental health contribute to life satisfaction scores. The information is selected then analyzed from the GSS2017 data file. The study found that there is a negative relationship between education and feelings of life, and a positive
+relationships between both marriage and self-rated mental health to feelings of life.
+
+
+## Introduction:
+
+  Under the fast pace of nowadays' life, many people are under stress from multiple aspects of their lives.  It is significant to know the life satisfaction of people to improve their physical,  mental, and social well-being in the future.  Through collecting and processing data of people's education, marriage, and self-evaluation of their mental health, which are all critical factors through people's lives, and then relate these factors with the self-scored feelings of lives, it can reveal the relationship between them.  By constructing a multiple linear regression model, the result shows that a person's life satisfaction is negatively related to their education level, and positively related to the marriage and self-evaluation of mental health.
+
+
+## Data
+
+```{r}
+data_2017 <- read.csv("gss.csv")
+sapply(data_2017, function(x) sum(is.na(x)))
+
+cols <- c('feelings_life', 'marital_status', 'self_rated_mental_health', 'education')
+removed_data <- complete.cases(data_2017[, cols])
+removed_data <- data_2017[removed_data, ]
+
+data_On <- removed_data %>% filter(province == "Ontario")
+
+```
+  The data used for this model is from the 2017 General Social Survey (GSS) about family changes in variety aspects of Canadian families.  It was published by the authority of the Minister responsible for Statistics Canada, and was constructed from February 2nd to November 30th, 2017.(Beaupré, 2020)
+  
+  The primary objectives of this data is to montior the changes in the living conditions and well-beings of Canadians over time, and provide information for the social policy issues.  The target population of this data was all persons being and above 15 years old in Canada, excluding residents of the Yukon, Northwest Territories, Nunavut and full-time residents of institutions.  The actual sample size of this data was 20602 while the expected sample size was 20000.(Beaupré, 2020)
+  
+  The information was collected via computer-assisted telephone interviews, then use stratification to sampling the data.  There are 27 sampling strata in total which were divided geographically by each province, and some of the Census Metropolitan Area was considered as separate strata.  The next step was using a simple random sample without replacement in each stratum.  All respondents were interviewed through phone calls, therefore the families without telephones were excluded from the frame population.  To be eligible for the survey, each household was required to have at least one person being or above 15 years old.  Eligible respondents then were randomly selected by each household to participate in the interview.  The response rate for this data was  52.4%.  For those non-responding telephone numbers, their weights were adjusted to represent by the responded telephone numbers.(Beaupré, 2020)
+  
+  The data provided by the GSS2017 survey had some postive political impacts on effecting program and policies, such as parental benefits, child care strategies, child custody, and spousal support programs.(General Social Survey - Family (GSS) 2019)  However, the method of using computer-assisted telephone interviews had some drawbacks that it neglected some potential respondents who only have cell phones, such as young people.  The responsed rate also tends to be lower, compared with in-person interviews, thus there were limitations on the amount and type of information that can be collected.(General Social Survey: An Overview, 2019 2019)
+  
+  Among all the variables included in the data, this model chooses feelings_life as the dependent Y variable, education, marital_status, self_rated_mental_health as the independent X variables, and then determine whether there exist some relationships between the Y and the Xs .  The three X variables are conprehensive and the amount of responded observations are sufficient that they only have a few missing observations, furthermore they are somehow related to the Y variable by common sense.  In this model, all the missing observations are removed from the data, and the data is filtered so that it only contains observations in Ontario.  To be clearer about the education variable groups, it is classified into three new groups: Bachelor's degree or higher, Below Bachelor's degree, and other non-university certificates.  
+
+
+## Model
+
+  Multiple linear Regression Model studies the relationship between one dependent variable(Y) and multiple independent variables(X).To be more elaborate, Yi stands for the value of the dependent variable taken from the observation unit i, while Xi means the value of independent variables for ith observation. Besides,beta0 can be considered as an intercept(constant) and beta1 to beta 3 represent coefficient with respect to corresponding independent variables Xi. In addition, epsilon means error term for the model, it's independent and identically distributed(iid) with variance theta squares and mean 0. Basically, beta1 means one unit change in X1 will lead to bata1 units change in Y(The logic is the same for beta 2 and 3.)
+
+  Multiple Linear Regression model can be considered as an appropriate model to predict which factors would affect the response variable (feelings of life). Choosing three independent variables including marital status, self-rated mental health, and education is because whether people are happy in their marriages, their own assessment of their mental health and their level of education can lead to different perceptions and definitions of feelings of life. It is worth noting that the classification of people's educational credentials into three categories is intended to provide a more intuitive analysis of the relationship between people's level of education and happiness index.
+
+
+mathematical notation：
+$$
+Y_{i} = \beta_{0} + \beta_{1}X_{i1}  + \beta_{2}X_{i2}+\beta_3X_{i3}+\epsilon_{i} 
+$$
+  Compare Multiple linear Regression model with others，it can fit data more accurately and give a more precise association of predictors(Xi) with the outcome(Y)，which is consistent with the goal. In terms of the Single Linear Regression Model, one drawback might include only one X and Y relationship can be studied, but in the reality, it's basically a model of several X's acting on Y together. However, Multivariate models also have disadvantages, such as it's easy to occur that two independent variables can affect each other, resulting in multicollinearity.
+
+
+## Results
+
+#Relationship between feelings of lives and education:
+
+```{r}
+data_On_New <- data_On %>% 
+  mutate(education = as.character(education)) %>%
+  mutate(education_new = case_when(education == "Bachelor's degree (e.g. B.A., B.Sc., LL.B.)" ~ "Bachelor's degree or higher",
+                                education == "University certificate or diploma below the bachelor’s level" ~ "Below Bachelor's degree",
+                                education == "University certificate, diploma or degree above the bach..." ~ "Bachelor's degree or higher",
+                                education == "High school diploma or a high school equivalency certificate" ~ "Below Bachelor's degree",
+                                education == "Less than high school diploma or its equivalent" ~ "Below Bachelor's degree",
+                                education == "College, CEGEP or other non-university certificate or di..." ~ "Other non-university certificates")) %>%
+  filter(!is.na(education_new))
+
+data_On_New %>% ggplot(aes(y=feelings_life,x=education_new,fill=education_new)) + geom_boxplot() +labs(title="Boxplot on the relationship between education and feelings life(Figure 1)")+scale_x_discrete(labels = c("BD or Higher", "Below BD", "Others"))
+```
+  Firstly, one new column of variable "education" is mutated from the data of Ontario. "education" is reclassified into three groups: Bachelor's degree or higher, Below Bachelor's degree and other non-university certificates. Then, delete the missing data(NA).
+  According to the boxplot above, the mean value for the box plot is about 8. The upper quartile of people who has an education diploma under a Bachelor's degree reaches 10, which is greater than that of the other two(about 8.75). Moreover, this bachelor's degree or higher boxplot is left-skewed which implies most people's feelings life is greater than the median value. In terms of the other two, they have roughly the same boxplots, with four outliers at feelings of life less than 3.
+Overall, It can be concluded that people with relatively less education are more likely to be satisfied with their lives, Probably because their lives are relatively less stressful.
+ 
+
+#Relationship between feelings of lives and marital status of respondents:
+
+```{r}
+data_On %>% ggplot(aes(y=feelings_life, x=marital_status, color=marital_status)) + geom_boxplot() + theme(axis.text.x=element_text(angle=50,hjust=0.5, vjust=0.5)) + theme_bw() + theme(legend.position = 'none') + theme(panel.grid.major=element_line(colour=NA)) + theme(panel.border=element_blank()) + labs(title='Relationship Between Feelings of Lives and Marital Status (Figure.2)')
+```
+    From the above Figure.2, it shows the score relationship between respondents' marital status and their feelings of life as a whole.  The respondents are separated into six groups based on their different marital statuses in this plot.  The mean of the life-feeling score is 8 out of 10, and the range of the score is approximately 2 for all six groups with the minimum score around 4 and the maximum score at 10.  The groups of the divorced, the living common-law, the single (never married), and the widowed present similar IQRs that the 25 to 75 percentile of respondents score their lives between 7 to 9 out of 10.  The married group appears to be more satisfied with their lives that 25% of them scored their lives 10 out of 10.  In contrast, the separated group is less satisfied with their lives compare with the other groups.  Only the top 25% of respondents in this group rated their lives at 8 out of 10 or higher, there is 25% of them rated their lives below 3 out of 10.  In addition to the graph, there are outliers among each group who rated their lives lower than the minimum scores of each group.
+    
+    
+#Relationship between feelings of lives and self-rated mental health: 
+
+```{r}
+data_On_3 = subset(data_On, self_rated_mental_health != 'NA')
+data_On_3 = subset(data_On, self_rated_mental_health != "Don't know")
+data_On_3 %>% 
+  ggplot(aes(y = feelings_life, x = self_rated_mental_health, fill = self_rated_mental_health)) + geom_boxplot() + 
+  scale_x_discrete(limits = c("Excellent", "Very good", "Good", "Fair", "Poor")) + 
+  theme_bw() +
+  theme(panel.border = element_blank()) + theme(panel.grid = element_line('NA')) + 
+  labs(title = "Relationship between feelings life and self rated mental health (Figure 3)")
+```
+  Figure 3 above illustrates the relationship between feelings of life and their self-rated mental health of 5 defined levels, that are excellent, very good, good, fair, and poor. It shows that people who rate their mental health as poor have the lowest median value of feelings of life, about 4, with the largest IQR and whisker. People who rate themselves excellent have the highest median and 75% quantile value of feelings of life. Also, a pattern that the better they rate their mental health, the higher feelings of life value they will have can be concluded from the graph.
+
+
+#Multiple Linear Regression Model
+
+```{r}
+model <- lm(feelings_life ~ self_rated_mental_health + education + marital_status,data = data_On_New)
+par(mfrow=c(2,2))
+plot(model)
+kable(summary(model)$coefficients,caption = "Summary of Multiple Linear Regression Model (table 1) ",digits =4)
+```
+  For the model checking part, there are several assumptions that need to be satisfied. In terms of the linearity(Residuals VS.Fitted plot), it shows that the model follows the linearity assumption since there is a red horizontal line at 0. It's also shown on the second QQ plot that the model is slightly left-skewed, but most of the dots are still on the dotted line.As for Scale-location plot, the overall distribution of points is scattered, meaning the data follows the constant variance assumption. Hence overall the model constructed above can be considered as a good model.
+
+  According to the summary of the Multiple linear regression Model, by analyzing the p-values, it shows that people who rate their mental health as fair or poor, people whose education certificates is less than high school diploma, people whose marital status shows married can be considered as significant independent variables contributes to the model.
+
+  There are some weakness of the model including not all the independent variables are useful since their p_values are too big, however, the good points of the model is that
+there is no multicollinearity between predictors which satisfied the model assumptions.
+
+## Discussion 
+
+  This project mainly discusses the relationship between feelings of life and people's marital status，self rated mental health and education level. For marital status, people of six groups, which are divorced, living common-law, married, separated, single(never married), and widowed, have the same median and IQR value of feelings of life. People who married have a relatively higher 75% and 25% quantile value. On the other hand, separated people have a lower 75% and 25% quantile value. For self-rated mental health, the highest median value exists in excellent and the lowest median value is in people who rate low mental health. It also shows a pattern that the better they rate their mental health, the higher feelings of life value they will have. Furthermore, education level has been divided into 3 types, Bachelor's degree or higher, below Bachelor's degree and other non-university certification, to see their influence on feelings of life. A conclusion that generally people with lower education levels have higher score of live feelings can be drawn from the model. 
+
+  In terms of Multiple Linear Regression Model part, it is been concluded that severel predictors can be used to perdic peoples feelings of life including people rating theri metal health as poor or fair, people whose education is less than high school certificates as well as people who are married.
+
+# Weaknesses
+
+  One weakness is that the data has many missing data(NA) so a lot of people are removed from some analysis. Moreover, people may be dishonest when taking the survey so that the correctness of the data is questionable. Therefore the reliability of the results is not strong. Since the survey was made by landline phone calls, some young people who don't have landline phones may be ignored. It is also a drawback of the survey. 
+
+# Next Steps
+
+  Some further steps should be taken to make the model more complete and reliable. To improve the data, more survey methods can be used. For example, an online survey by e-mail can be taken for people without landline phones and surveys by mails or door knocks can be used for the elderly who don't know how to use a phone or computer. Another improvement is that the sampling method can be changed to generate data that can lead to a more general and correct result. 
+
+
+#references:
+
+```{r}
+citation("ggplot2")
+citation("dplyr")
+citation("knitr")
+citation("tidyverse")
+citation()
+```
+
+#Data:
+Beaupré, P. (2020). General Social Survey Cycle 31 : Families Public Use Microdata File Documentation and User’s Guide (Vol. 2019001). Ottawa: Authority of the Minister responsible for Statistics Canada. Retrieved October 19, 2020.
+
+General Social Survey - Family (GSS). (2019, February 06). Retrieved October 19, 2020, from https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=getSurvey
+
+General Social Survey: An Overview, 2019. (2019, February 20). Retrieved October 19, 2020, from https://www150.statcan.gc.ca/n1/pub/89f0115x/89f0115x2019001-eng.htm
+
+#FOR GRAPHS：
+
+MrmolejeMrmoleje 39811 gold badge44 silver badges1818 bronze badges, Arg0naut91arg0naut91 12.2k11 gold badge1010 silver badges2929 bronze badges, LyzandeRLyzandeR 32.7k1111 gold badges5959 silver badges7676 bronze badges, &amp; Akrunakrun 600k2121 gold badges334334 silver badges435435 bronze badges. (2019, June 01). Mutate multiple variables based on a given condition. Retrieved October 19, 2020, from 
+https://stackoverflow.com/questions/55260462/mutate-multiple-variables-based-on-a-given-condition
+
+Ggplot2 box plot : Quick start guide - R software and data visualization. (n.d.). Retrieved October 19, 2020, from http://www.sthda.com/english/wiki/ggplot2-box-plot-quick-start-guide-r-software-and-data-visualization
+
+Position scales for discrete data - scale_x_discrete. (n.d.). Retrieved October 19, 2020, from https://ggplot2.tidyverse.org/reference/scale_discrete.html
+
+R 学习 - 箱线图. (n.d.). Retrieved October 19, 2020, from https://blog.csdn.net/qazplm12_3/article/details/76474663
+
+Kenton, W. (2020, September 21). How Multiple Linear Regression Works. Retrieved October 19, 2020, from https://www.investopedia.com/terms/m/mlr.asp
+
+
+
+
+
+
+
+
